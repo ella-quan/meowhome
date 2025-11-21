@@ -44,9 +44,11 @@ const App: React.FC = () => {
       return;
     }
 
+    // Show UI immediately, don't wait for Firebase data
+    setIsLoading(false);
+
     const unsubscribe = subscribeToFamilyData((newData) => {
       setData(prev => ({ ...prev, ...newData }));
-      setIsLoading(false);
     });
 
     return () => unsubscribe();

@@ -30,8 +30,6 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, t }) => {
       avatar: selectedAvatar
     };
 
-    // Small delay for UX
-    await new Promise(resolve => setTimeout(resolve, 500));
     onComplete(newMember);
   };
 
