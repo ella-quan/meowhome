@@ -61,9 +61,14 @@ const App: React.FC = () => {
   // Simply: if no currentUser ID locally, show onboarding.
 
   const handleOnboardingComplete = async (member: FamilyMember) => {
-    await addMember(member);
+    // Set user state immediately for instant transition
     setLocalUserId(member.id);
     setCurrentUser(member.id);
+
+    // Write to Firebase in background (don't block UI)
+    addMember(member).catch(err => {
+      console.error('Failed to save member to Firebase:', err);
+    });
   };
 
   // Wrapper functions to match Component props
