@@ -1,10 +1,10 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { AppData, ViewState, TodoItem, CalendarEvent, Photo, Language, FamilyMember } from './types';
-import { 
-  subscribeToFamilyData, 
-  getLocalUserId, 
-  setLocalUserId, 
+import {
+  subscribeToFamilyData,
+  getLocalUserId,
+  setLocalUserId,
   addMember,
   addTodo,
   updateTodo,
@@ -16,14 +16,16 @@ import {
   deletePhoto,
   INITIAL_DATA
 } from './services/storageService';
-import Dashboard from './components/Dashboard';
-import CalendarView from './components/CalendarView';
-import TodoView from './components/TodoView';
-import GalleryView from './components/GalleryView';
-import MagicInput from './components/MagicInput';
-import Onboarding from './components/Onboarding';
 import { translations } from './utils/i18n';
 import { LayoutDashboard, Calendar as CalIcon, Footprints, Image as ImageIcon, Globe, Cat, Loader2 } from 'lucide-react';
+
+// Lazy load components for better initial load performance
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const CalendarView = lazy(() => import('./components/CalendarView'));
+const TodoView = lazy(() => import('./components/TodoView'));
+const GalleryView = lazy(() => import('./components/GalleryView'));
+const MagicInput = lazy(() => import('./components/MagicInput'));
+const Onboarding = lazy(() => import('./components/Onboarding'));
 
 const App: React.FC = () => {
   const [data, setData] = useState<AppData>(INITIAL_DATA);
@@ -34,20 +36,26 @@ const App: React.FC = () => {
 
   const t = translations[language];
 
-  // Real-time Subscription
+  // Real-time Subscription - Only subscribe if user exists
   useEffect(() => {
+    // Skip subscription if no user (show onboarding immediately)
+    if (!currentUser) {
+      setIsLoading(false);
+      return;
+    }
+
     const unsubscribe = subscribeToFamilyData((newData) => {
       setData(prev => ({ ...prev, ...newData }));
       setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [currentUser]);
 
   // Derived "Onboarded" state: user exists in local storage AND is present in the fetched members list
   const isMemberLoaded = data.members.some(m => m.id === currentUser);
-  const needsOnboarding = !currentUser || (!isLoading && !isMemberLoaded && data.members.length > 0 && false); 
-  // Note: The 'false' above prevents re-onboarding loop if DB is wiped but local storage remains. 
+  const needsOnboarding = !currentUser || (!isLoading && !isMemberLoaded && data.members.length > 0 && false);
+  // Note: The 'false' above prevents re-onboarding loop if DB is wiped but local storage remains.
   // Simply: if no currentUser ID locally, show onboarding.
 
   const handleOnboardingComplete = async (member: FamilyMember) => {
@@ -79,22 +87,29 @@ const App: React.FC = () => {
     setLanguage(prev => prev === 'en' ? 'zh' : 'en');
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-amber-50">
-        <div className="flex flex-col items-center gap-4">
-           <Loader2 className="w-12 h-12 text-primary-400 animate-spin" />
-           <p className="text-gray-400 font-bold animate-pulse">Loading your family home...</p>
-        </div>
+  const LoadingSpinner = () => (
+    <div className="min-h-screen flex items-center justify-center bg-amber-50">
+      <div className="flex flex-col items-center gap-4">
+         <Loader2 className="w-12 h-12 text-primary-400 animate-spin" />
+         <p className="text-gray-400 font-bold animate-pulse">Loading...</p>
       </div>
-    );
+    </div>
+  );
+
+  if (isLoading) {
+    return <LoadingSpinner />;
   }
 
   if (!currentUser) {
-    return <Onboarding onComplete={handleOnboardingComplete} t={t} />;
+    return (
+      <Suspense fallback={<LoadingSpinner />}>
+        <Onboarding onComplete={handleOnboardingComplete} t={t} />
+      </Suspense>
+    );
   }
 
   return (
+    <Suspense fallback={<LoadingSpinner />}>
     <div className="min-h-screen pb-24 md:pb-0 md:pl-32">
       {/* Desktop Sidebar Navigation */}
       <nav className="hidden md:flex fixed left-6 top-6 bottom-6 w-24 bg-white/80 backdrop-blur-md rounded-[3rem] shadow-soft border-4 border-white flex-col items-center py-8 z-40">
@@ -225,13 +240,14 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <MagicInput 
-        onAddTodo={handleAddTodo} 
-        onAddEvent={handleAddEvent} 
+      <MagicInput
+        onAddTodo={handleAddTodo}
+        onAddEvent={handleAddEvent}
         members={data.members}
-        t={t} 
+        t={t}
       />
     </div>
+    </Suspense>
   );
 };
 
