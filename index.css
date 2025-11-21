@@ -1,8 +1,48 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
+@import 'tailwindcss';
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+@theme {
+  --color-primary-50: #fff0f5;
+  --color-primary-100: #ffdee9;
+  --color-primary-200: #ffc0d6;
+  --color-primary-300: #ff94ba;
+  --color-primary-400: #ff7eb6;
+  --color-primary-500: #ff5c96;
+  --color-primary-600: #e61462;
+
+  --color-secondary-50: #f0f8ff;
+  --color-secondary-100: #dbeafe;
+  --color-secondary-200: #bfdbfe;
+  --color-secondary-300: #93c5fd;
+  --color-secondary-400: #60a5fa;
+  --color-secondary-500: #3b82f6;
+
+  --color-accent-50: #fffaeb;
+  --color-accent-100: #fef3c7;
+  --color-accent-200: #fde68a;
+  --color-accent-300: #fcd34d;
+  --color-accent-400: #fbbf24;
+  --color-accent-500: #f59e0b;
+
+  --color-mint-100: #d1fae5;
+  --color-mint-200: #a7f3d0;
+  --color-mint-400: #34d399;
+  --color-mint-500: #10b981;
+
+  --color-lavender-100: #f3e8ff;
+  --color-lavender-200: #e9d5ff;
+  --color-lavender-400: #c084fc;
+
+  --color-candy-cream: #fffdf7;
+  --color-candy-dark: #4a4a4a;
+
+  --font-sans: 'Nunito', sans-serif;
+  --font-handwriting: 'Nunito', cursive;
+
+  --shadow-soft: 0 10px 40px -10px rgba(192, 164, 192, 0.2);
+  --shadow-pop: 4px 4px 0px 0px rgba(0,0,0,0.05);
+  --shadow-card: 0 8px 20px -4px rgba(0,0,0,0.05);
+}
 
 body {
   font-family: 'Nunito', sans-serif;
