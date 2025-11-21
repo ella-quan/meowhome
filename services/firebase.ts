@@ -1,6 +1,6 @@
-import { initializeApp, FirebaseApp } from "firebase/app";
-import { getFirestore, Firestore } from "firebase/firestore";
-import { getStorage, FirebaseStorage } from "firebase/storage";
+import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 // Firebase configuration using environment variables
 const firebaseConfig = {
@@ -13,38 +13,13 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-// Lazy initialization - only initialize when first accessed
-let _app: FirebaseApp | null = null;
-let _db: Firestore | null = null;
-let _storage: FirebaseStorage | null = null;
-
-const getApp = () => {
-  if (!_app) {
-    _app = initializeApp(firebaseConfig);
-  }
-  return _app;
-};
-
-export const db = new Proxy({} as Firestore, {
-  get: (_target, prop) => {
-    if (!_db) {
-      _db = getFirestore(getApp());
-    }
-    return (_db as any)[prop];
-  }
-});
-
-export const storage = new Proxy({} as FirebaseStorage, {
-  get: (_target, prop) => {
-    if (!_storage) {
-      _storage = getStorage(getApp());
-    }
-    return (_storage as any)[prop];
-  }
-});
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+export const db = getFirestore(app);
+export const storage = getStorage(app);
 
 // Lazy load analytics only when needed (improves initial load performance)
 export const initAnalytics = async () => {
   const { getAnalytics } = await import("firebase/analytics");
-  return getAnalytics(getApp());
+  return getAnalytics(app);
 };
