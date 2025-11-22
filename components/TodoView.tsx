@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { TodoItem, Priority, FamilyMember } from '../types';
 import { Translation } from '../utils/i18n';
-import { Trash2, Flag, UserPlus, User, Footprints, Fish } from 'lucide-react';
+import { Trash2, Flag, UserPlus, User, Footprints, Fish, Plus, X } from 'lucide-react';
 
 interface TodoViewProps {
   todos: TodoItem[];
@@ -10,13 +10,20 @@ interface TodoViewProps {
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdate: (todo: TodoItem) => void;
+  onAdd: (todo: TodoItem) => void;
   t: Translation;
 }
 
-const TodoView: React.FC<TodoViewProps> = ({ todos, members, onToggle, onDelete, onUpdate, t }) => {
+const TodoView: React.FC<TodoViewProps> = ({ todos, members, onToggle, onDelete, onUpdate, onAdd, t }) => {
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
-  const [assignMenuOpen, setAssignMenuOpen] = useState<string | null>(null); 
+  const [assignMenuOpen, setAssignMenuOpen] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newTodoTitle, setNewTodoTitle] = useState('');
+  const [newTodoPriority, setNewTodoPriority] = useState<Priority>(Priority.Medium);
+  const [newTodoAssignedTo, setNewTodoAssignedTo] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -60,6 +67,34 @@ const TodoView: React.FC<TodoViewProps> = ({ todos, members, onToggle, onDelete,
 
   const getAssignedMember = (id?: string) => members.find(m => m.id === id);
 
+  const handleAddTodo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTodoTitle.trim()) return;
+
+    setIsSubmitting(true);
+
+    const newTodo: TodoItem = {
+      id: `todo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      title: newTodoTitle.trim(),
+      completed: false,
+      priority: newTodoPriority,
+      assignedTo: newTodoAssignedTo || undefined,
+      createdAt: Date.now()
+    };
+
+    try {
+      await onAdd(newTodo);
+      setShowAddModal(false);
+      setNewTodoTitle('');
+      setNewTodoPriority(Priority.Medium);
+      setNewTodoAssignedTo('');
+    } catch (error) {
+      console.error('Failed to add todo:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="bg-white/80 backdrop-blur-md rounded-[3rem] shadow-soft border-4 border-white p-6 md:p-8 min-h-[70vh] relative">
       {/* Decorative Cat Ears for the Container */}
@@ -73,19 +108,28 @@ const TodoView: React.FC<TodoViewProps> = ({ todos, members, onToggle, onDelete,
             </span>
             {t.tasks.title}
         </h2>
-        
-        <div className="flex bg-secondary-50 p-1.5 rounded-2xl w-fit border-2 border-white shadow-sm">
-             {['all', 'active', 'completed'].map((f) => (
-               <button
-                  key={f}
-                  onClick={() => setFilter(f as any)}
-                  className={`px-5 py-2.5 text-sm font-black rounded-xl transition-all capitalize ${
-                    filter === f ? 'bg-white text-secondary-500 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-                  }`}
-               >
-                 {t.tasks.filter[f as keyof typeof t.tasks.filter]}
-               </button>
-             ))}
+
+        <div className="flex items-center gap-3">
+          <div className="flex bg-secondary-50 p-1.5 rounded-2xl w-fit border-2 border-white shadow-sm">
+               {['all', 'active', 'completed'].map((f) => (
+                 <button
+                    key={f}
+                    onClick={() => setFilter(f as any)}
+                    className={`px-5 py-2.5 text-sm font-black rounded-xl transition-all capitalize ${
+                      filter === f ? 'bg-white text-secondary-500 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                 >
+                   {t.tasks.filter[f as keyof typeof t.tasks.filter]}
+                 </button>
+               ))}
+          </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="p-3 bg-mint-400 text-white rounded-2xl hover:bg-mint-500 transition-all hover:scale-110 shadow-md"
+            title="Add Task"
+          >
+            <Plus className="w-6 h-6" />
+          </button>
         </div>
       </div>
 
@@ -201,6 +245,116 @@ const TodoView: React.FC<TodoViewProps> = ({ todos, members, onToggle, onDelete,
           })
         )}
       </div>
+
+      {/* Add Todo Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowAddModal(false)}>
+          <div className="bg-white rounded-[3rem] shadow-2xl border-4 border-white p-8 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-black text-gray-700">Add Task</h2>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+              >
+                <X className="w-6 h-6 text-gray-400" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddTodo} className="space-y-6">
+              <div>
+                <label className="block text-sm font-bold text-gray-600 mb-3">
+                  Task
+                </label>
+                <input
+                  type="text"
+                  value={newTodoTitle}
+                  onChange={(e) => setNewTodoTitle(e.target.value)}
+                  placeholder="Enter task description"
+                  className="w-full px-6 py-4 rounded-2xl border-2 border-gray-100 focus:border-mint-300 focus:outline-none text-gray-700 font-medium transition-all"
+                  autoFocus
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-600 mb-3">
+                  Priority
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setNewTodoPriority(Priority.Low)}
+                    className={`px-4 py-3 rounded-xl font-bold transition-all ${
+                      newTodoPriority === Priority.Low
+                        ? 'bg-secondary-200 text-secondary-800 border-2 border-secondary-400 scale-105'
+                        : 'bg-gray-50 text-gray-600 border-2 border-transparent hover:bg-gray-100'
+                    }`}
+                  >
+                    {t.tasks.priority.low}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewTodoPriority(Priority.Medium)}
+                    className={`px-4 py-3 rounded-xl font-bold transition-all ${
+                      newTodoPriority === Priority.Medium
+                        ? 'bg-accent-200 text-accent-800 border-2 border-accent-400 scale-105'
+                        : 'bg-gray-50 text-gray-600 border-2 border-transparent hover:bg-gray-100'
+                    }`}
+                  >
+                    {t.tasks.priority.medium}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewTodoPriority(Priority.High)}
+                    className={`px-4 py-3 rounded-xl font-bold transition-all ${
+                      newTodoPriority === Priority.High
+                        ? 'bg-primary-200 text-primary-800 border-2 border-primary-400 scale-105'
+                        : 'bg-gray-50 text-gray-600 border-2 border-transparent hover:bg-gray-100'
+                    }`}
+                  >
+                    {t.tasks.priority.high}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-600 mb-3">
+                  Assign to
+                </label>
+                <select
+                  value={newTodoAssignedTo}
+                  onChange={(e) => setNewTodoAssignedTo(e.target.value)}
+                  className="w-full px-6 py-4 rounded-2xl border-2 border-gray-100 focus:border-mint-300 focus:outline-none text-gray-700 font-medium transition-all"
+                >
+                  <option value="">{t.tasks.unassigned}</option>
+                  {members.map(member => (
+                    <option key={member.id} value={member.id}>
+                      {member.avatar} {member.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="flex-1 px-6 py-4 rounded-2xl border-2 border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!newTodoTitle.trim() || isSubmitting}
+                  className="flex-1 bg-gradient-to-r from-mint-400 to-mint-500 text-white font-black py-4 rounded-2xl shadow-lg shadow-mint-200 hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all"
+                >
+                  {isSubmitting ? 'Adding...' : 'Add Task'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -226,13 +226,14 @@ const App: React.FC = () => {
           />
         )}
         {currentView === 'todos' && (
-          <TodoView 
-            todos={data.todos} 
+          <TodoView
+            todos={data.todos}
             members={data.members}
-            onToggle={handleToggleTodo} 
-            onDelete={handleDeleteTodo} 
+            onToggle={handleToggleTodo}
+            onDelete={handleDeleteTodo}
             onUpdate={handleUpdateTodo}
-            t={t} 
+            onAdd={handleAddTodo}
+            t={t}
           />
         )}
         {currentView === 'gallery' && (

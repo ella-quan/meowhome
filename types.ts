@@ -32,6 +32,7 @@ export interface CalendarEvent {
   location?: string;
   isAllDay: boolean;
   type: 'appointment' | 'activity' | 'celebration' | 'general';
+  assignedTo?: string; // Member ID
 }
 
 export interface Photo {
