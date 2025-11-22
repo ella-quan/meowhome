@@ -32,27 +32,33 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>('dashboard');
   const [language, setLanguage] = useState<Language>('en');
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(true);
   const [currentUser, setCurrentUser] = useState<string | null>(getLocalUserId());
 
   const t = translations[language];
 
-  // Real-time Subscription - Only subscribe if user exists
+  // Real-time Subscription
   useEffect(() => {
-    // Skip subscription if no user (show onboarding immediately)
-    if (!currentUser) {
-      setIsLoading(false);
-      return;
-    }
-
-    // Show UI immediately, don't wait for Firebase data
-    setIsLoading(false);
-
+    // Always subscribe to get members data for profile selection
     const unsubscribe = subscribeToFamilyData((newData) => {
       setData(prev => ({ ...prev, ...newData }));
+      // Once we get members data, stop loading
+      if (newData.members && newData.members.length > 0) {
+        setIsLoadingMembers(false);
+      }
     });
 
-    return () => unsubscribe();
-  }, [currentUser]);
+    // Show UI after a brief moment to allow Firebase to connect
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+      setIsLoadingMembers(false);
+    }, 1000);
+
+    return () => {
+      unsubscribe();
+      clearTimeout(timer);
+    };
+  }, []);
 
   // Derived "Onboarded" state: user exists in local storage AND is present in the fetched members list
   const isMemberLoaded = data.members.some(m => m.id === currentUser);
@@ -110,7 +116,12 @@ const App: React.FC = () => {
   if (!currentUser) {
     return (
       <Suspense fallback={<LoadingSpinner />}>
-        <Onboarding onComplete={handleOnboardingComplete} existingMembers={data.members} t={t} />
+        <Onboarding
+          onComplete={handleOnboardingComplete}
+          existingMembers={data.members}
+          isLoading={isLoadingMembers}
+          t={t}
+        />
       </Suspense>
     );
   }

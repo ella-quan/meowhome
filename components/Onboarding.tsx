@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { FamilyMember } from '../types';
 import { Translation } from '../utils/i18n';
-import { Cat, Sparkles } from 'lucide-react';
+import { Cat, Sparkles, Loader2 } from 'lucide-react';
 
 interface OnboardingProps {
   onComplete: (member: FamilyMember) => void;
   existingMembers: FamilyMember[];
+  isLoading?: boolean;
   t: Translation;
 }
 
@@ -14,7 +15,7 @@ const AVATAR_OPTIONS = [
   '🐷', '🐸', '🐙', '🦋', '🌸', '🌟', '🌈', '💫'
 ];
 
-const Onboarding: React.FC<OnboardingProps> = ({ onComplete, existingMembers, t }) => {
+const Onboarding: React.FC<OnboardingProps> = ({ onComplete, existingMembers, isLoading, t }) => {
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
 
   const handleSelectProfile = () => {
@@ -23,6 +24,18 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, existingMembers, t 
       onComplete(member);
     }
   };
+
+  // If still loading members from Firebase, show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-amber-50 to-secondary-50 flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 text-primary-400 animate-spin" />
+          <p className="text-gray-400 font-bold animate-pulse">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // If there are existing members, show profile selection screen
   if (existingMembers.length > 0) {
