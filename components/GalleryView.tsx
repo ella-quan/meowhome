@@ -16,6 +16,7 @@ interface GalleryViewProps {
 
 const GalleryView: React.FC<GalleryViewProps> = ({ photos, members, onAddPhoto, onDeletePhoto, t, lang }) => {
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string>('');
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentUserId = getLocalUserId();
@@ -24,38 +25,52 @@ const GalleryView: React.FC<GalleryViewProps> = ({ photos, members, onAddPhoto, 
   const sortedPhotos = [...photos].sort((a, b) => b.timestamp - a.timestamp);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setIsUploading(true);
+    const fileArray = Array.from(files);
+    let successCount = 0;
+    let failCount = 0;
 
     try {
-      // 1. Get Caption
-      const caption = window.prompt(t.gallery.promptCaption, "");
-      if (caption === null) {
-        setIsUploading(false);
-        return;
+      // Upload all files concurrently
+      for (let i = 0; i < fileArray.length; i++) {
+        const file = fileArray[i];
+        setUploadProgress(`Uploading ${i + 1}/${fileArray.length}...`);
+
+        try {
+          // Upload to Firebase
+          const downloadUrl = await uploadPhoto(file);
+
+          // Save Record (use default caption with file name)
+          const newPhoto: Photo = {
+            id: `${Date.now()}_${i}`,
+            url: downloadUrl,
+            caption: file.name.replace(/\.[^/.]+$/, ''), // Remove file extension
+            uploadedBy: currentUserId || 'unknown',
+            timestamp: Date.now() + i // Ensure unique timestamps
+          };
+
+          onAddPhoto(newPhoto);
+          successCount++;
+        } catch (error) {
+          console.error(`Failed to upload ${file.name}:`, error);
+          failCount++;
+        }
       }
 
-      // 2. Upload to Firebase
-      const downloadUrl = await uploadPhoto(file);
-
-      // 3. Save Record
-      const newPhoto: Photo = {
-        id: Date.now().toString(),
-        url: downloadUrl,
-        caption: caption || 'Untitled',
-        uploadedBy: currentUserId || 'unknown', 
-        timestamp: Date.now()
-      };
-
-      onAddPhoto(newPhoto);
+      // Show result
+      if (failCount > 0) {
+        alert(`Uploaded ${successCount} photo(s). ${failCount} failed.`);
+      }
 
     } catch (error) {
       console.error("Upload failed", error);
-      alert("Failed to upload photo. Please try again.");
+      alert("Failed to upload photos. Please try again.");
     } finally {
       setIsUploading(false);
+      setUploadProgress('');
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -67,20 +82,30 @@ const GalleryView: React.FC<GalleryViewProps> = ({ photos, members, onAddPhoto, 
     <div className="space-y-8">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-black text-gray-800">{t.gallery.title}</h2>
-        <button 
+        <button
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploading}
           className="flex items-center gap-2 bg-primary-500 text-white px-6 py-3 rounded-[1.5rem] hover:bg-primary-600 transition-all shadow-lg shadow-primary-200 font-bold disabled:opacity-50 transform hover:scale-105"
         >
-          {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
-          <span>{t.gallery.upload}</span>
+          {isUploading ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="text-sm">{uploadProgress}</span>
+            </>
+          ) : (
+            <>
+              <Upload className="w-5 h-5" />
+              <span>{t.gallery.upload}</span>
+            </>
+          )}
         </button>
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          onChange={handleFileSelect} 
-          accept="image/*" 
-          className="hidden" 
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+          accept="image/*"
+          multiple
+          className="hidden"
         />
       </div>
 
