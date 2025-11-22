@@ -90,7 +90,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, onChangeView, t, lang }) =>
       title: newTodoTitle.trim(),
       completed: false,
       priority: newTodoPriority,
-      assignedTo: newTodoAssignedTo || undefined,
+      ...(newTodoAssignedTo && { assignedTo: newTodoAssignedTo }),
       createdAt: Date.now()
     };
 

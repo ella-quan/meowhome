@@ -39,7 +39,7 @@ const MagicInput: React.FC<MagicInputProps> = ({ onAddTodo, onAddEvent, members,
           completed: false,
           priority: (result.data.priority as Priority) || Priority.Medium,
           createdAt: Date.now(),
-          assignedTo: result.data.assignedTo || undefined
+          ...(result.data.assignedTo && { assignedTo: result.data.assignedTo })
         };
         onAddTodo(newTodo);
       } else if (result.type === 'event') {
@@ -49,7 +49,7 @@ const MagicInput: React.FC<MagicInputProps> = ({ onAddTodo, onAddEvent, members,
           startTime: result.data.startTime ? new Date(result.data.startTime).getTime() : Date.now(),
           endTime: result.data.endTime ? new Date(result.data.endTime).getTime() : Date.now() + 3600000,
           isAllDay: result.data.isAllDay || false,
-          location: result.data.location,
+          ...(result.data.location && { location: result.data.location }),
           type: result.data.eventType || 'general'
         };
         onAddEvent(newEvent);

@@ -61,7 +61,13 @@ const TodoView: React.FC<TodoViewProps> = ({ todos, members, onToggle, onDelete,
   };
 
   const handleAssign = (todo: TodoItem, memberId: string | undefined) => {
-     onUpdate({ ...todo, assignedTo: memberId });
+     const updatedTodo = { ...todo };
+     if (memberId) {
+       updatedTodo.assignedTo = memberId;
+     } else {
+       delete updatedTodo.assignedTo;
+     }
+     onUpdate(updatedTodo);
      setAssignMenuOpen(null);
   };
 
@@ -78,7 +84,7 @@ const TodoView: React.FC<TodoViewProps> = ({ todos, members, onToggle, onDelete,
       title: newTodoTitle.trim(),
       completed: false,
       priority: newTodoPriority,
-      assignedTo: newTodoAssignedTo || undefined,
+      ...(newTodoAssignedTo && { assignedTo: newTodoAssignedTo }),
       createdAt: Date.now()
     };
 

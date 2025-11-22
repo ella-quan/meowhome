@@ -457,12 +457,12 @@ const EventModal: React.FC<EventModalProps> = ({ isOpen, onClose, onSave, onDele
         const newEvent: CalendarEvent = {
             id: eventToEdit?.id || Date.now().toString(),
             title,
-            location,
+            ...(location && { location }),
             type,
             isAllDay,
             startTime: start,
             endTime: end,
-            description: eventToEdit?.description 
+            ...(eventToEdit?.description && { description: eventToEdit.description })
         };
         
         onSave(newEvent);
