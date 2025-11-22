@@ -110,7 +110,7 @@ const App: React.FC = () => {
   if (!currentUser) {
     return (
       <Suspense fallback={<LoadingSpinner />}>
-        <Onboarding onComplete={handleOnboardingComplete} t={t} />
+        <Onboarding onComplete={handleOnboardingComplete} existingMembers={data.members} t={t} />
       </Suspense>
     );
   }
